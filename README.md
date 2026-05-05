@@ -106,6 +106,7 @@ screenplay-latex/
 
 ```latex
 \screentitle{The Last Light}
+\screensubtitle{``Pilot Episode''}
 \screenauthor{Jane Doe}
 \screencontact{Jane Doe \\ 123 Sunset Blvd \\ jane@example.com}
 \screendraftinfo{First Draft — February 2026}

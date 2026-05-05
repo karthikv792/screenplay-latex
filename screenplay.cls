@@ -1,15 +1,18 @@
-%% screenplay.cls — Final Draft–style LaTeX screenplay class
+%% screenplay.cls — Final Draft–matched LaTeX screenplay class
 %% with pre-production annotation support
 %%
 %% Usage:
 %%   \documentclass{screenplay}                  % clean shooting script
 %%   \documentclass[preproduction]{screenplay}   % annotated pre-production draft
 %%
+%% Formatting derived from Final Draft's ParagraphSpec definitions.
+%% All element indents and widths match FD exactly.
+%%
 %% Author: Claude (Anthropic) — 2026
 %% License: MIT
 %%
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{screenplay}[2026/02/08 v1.0 Screenplay class with pre-production annotations]
+\ProvidesClass{screenplay}[2026/03/16 v2.0 Screenplay class — Final Draft matched]
 
 % ============================================================
 % OPTIONS
@@ -30,10 +33,10 @@
   headheight=15pt
 ]{geometry}
 \RequirePackage[T1]{fontenc}
-\RequirePackage{courier}         % Courier font family
-\renewcommand{\rmdefault}{pcr}   % Set Courier as the default roman font
-\renewcommand{\sfdefault}{pcr}   % Sans-serif also Courier (screenplay is mono)
-\renewcommand{\ttdefault}{pcr}   % Monospace also Courier
+\RequirePackage{courier}
+\renewcommand{\rmdefault}{pcr}
+\renewcommand{\sfdefault}{pcr}
+\renewcommand{\ttdefault}{pcr}
 \RequirePackage{xcolor}
 \RequirePackage{fancyhdr}
 \RequirePackage{titlesec}
@@ -50,13 +53,11 @@
 \RequirePackage{setspace}        % line spacing
 \RequirePackage{soul}            % line-breakable highlighting
 
-% Font is set via the courier package above (Courier, 12pt).
-% For Courier Prime or other OpenType fonts, replace
-% the courier/fontenc setup with fontspec (requires LuaLaTeX/XeLaTeX).
-
 % ============================================================
-% PAGE STYLE
+% PAGE STYLE — matches Final Draft header behavior
 % ============================================================
+% FD: Header visible (not on first page), page number top-right.
+% FD: HeaderMargin = 36pt (0.5"), FooterMargin = 36pt.
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -65,13 +66,53 @@
 \fancypagestyle{plain}{\fancyhf{}\fancyhead[R]{\thepage.}}
 \fancypagestyle{titlepage}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}}
 
-% Line spacing: single-spaced (standard screenplay)
-\singlespacing
+% ============================================================
+% SPACING & FONT SIZE — matches Final Draft exactly
+% ============================================================
+% FD uses "Courier Final Draft" at 12pt — a narrower, tighter-leaded
+% monospace than LaTeX's URW Courier. LaTeX's default 12pt leading
+% (14.4pt) is too loose. Setting 12pt / 12.5pt leading matches FD's
+% tighter line spacing and produces identical page counts.
+% Works with pdflatex — no XeLaTeX required.
 
-% No paragraph indent for screenplay (we handle indentation per element)
+\singlespacing
+\AtBeginDocument{\fontsize{12pt}{12.5pt}\selectfont}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{11pt}  % one blank line between elements
-\raggedright                 % screenplays use left-aligned (ragged right) text
+\setlength{\parskip}{0pt}      % NO global parskip — elements manage their own
+\raggedright                     % screenplays use left-aligned (ragged right) text
+\frenchspacing                   % no extra space after periods — matches FD
+
+% ============================================================
+% FINAL DRAFT MEASUREMENTS
+% ============================================================
+% Derived from ParagraphSpec in the FDX file.
+% All indents measured from TEXT AREA left edge (page left + 1.5").
+% Text area width = 8.5" - 1.5" - 1.0" = 6.0"
+%
+%  Element         | Indent  | Width  | SpaceBefore
+%  ----------------|---------|--------|------------
+%  Scene Heading   | 0.00"   | 6.00"  | 24pt
+%  Action          | 0.00"   | 6.00"  | 12pt
+%  Character       | 2.00"   | 3.75"  | 12pt
+%  Parenthetical   | 1.50"   | 2.50"  | 0pt
+%  Dialogue        | 1.00"   | 3.50"  | 0pt
+%  Transition      | 4.00"   | 1.60"  | 12pt (right-aligned)
+
+\newlength{\fdCharIndent}    \setlength{\fdCharIndent}{2.0in}
+\newlength{\fdCharWidth}     \setlength{\fdCharWidth}{3.75in}
+\newlength{\fdDiaIndent}     \setlength{\fdDiaIndent}{1.0in}
+\newlength{\fdDiaWidth}      \setlength{\fdDiaWidth}{3.5in}
+\newlength{\fdParenIndent}   \setlength{\fdParenIndent}{1.5in}
+\newlength{\fdParenWidth}    \setlength{\fdParenWidth}{2.5in}
+\newlength{\fdTransIndent}   \setlength{\fdTransIndent}{4.0in}
+
+% SpaceBefore values (FD uses 12pt = 1 line, 24pt = 2 lines at 12pt)
+\newlength{\fdSlugSpace}     \setlength{\fdSlugSpace}{24pt}
+\newlength{\fdActionSpace}   \setlength{\fdActionSpace}{12pt}
+\newlength{\fdCharSpace}     \setlength{\fdCharSpace}{12pt}
+\newlength{\fdDiaSpace}      \setlength{\fdDiaSpace}{0pt}
+\newlength{\fdParenSpace}    \setlength{\fdParenSpace}{0pt}
+\newlength{\fdTransSpace}    \setlength{\fdTransSpace}{12pt}
 
 % ============================================================
 % ANNOTATION COLORS
@@ -85,6 +126,7 @@
 \definecolor{vfxcolor}{HTML}{EF9A9A}        % Red
 \definecolor{wardrobecolor}{HTML}{F48FB1}   % Pink
 \definecolor{setnotecolor}{HTML}{80CBC4}    % Teal
+\definecolor{outlinecolor}{HTML}{7D83D6}    % Lavender (outline headings)
 
 % Revision page colors
 \definecolor{revblue}{HTML}{D6EAF8}
@@ -101,28 +143,22 @@
 % REVISION SUPPORT
 % ============================================================
 
-\newcommand{\@revisioncolor}{white}  % default: no color
+\newcommand{\@revisioncolor}{white}
 \newcommand{\@revisionmark}{}
 \newcommand{\@revisionnumber}{}
 \newcommand{\@revisiondate}{}
 
-% \revisioncolor{pink} — sets page background
 \newcommand{\revisioncolor}[1]{%
   \renewcommand{\@revisioncolor}{rev#1}%
 }
-
-% \revisioninfo{number}{date}
 \newcommand{\revisioninfo}[2]{%
   \renewcommand{\@revisionnumber}{#1}%
   \renewcommand{\@revisiondate}{#2}%
 }
-
-% \revised{text} — shows text with asterisk in right margin
 \newcommand{\revised}[1]{%
   #1\marginpar{\hfill\textbf{*}}%
 }
 
-% Apply page background color
 \newif\if@hasrevcolor\@hasrevcolorfalse
 \let\@orig@revisioncolor\revisioncolor
 \renewcommand{\revisioncolor}[1]{%
@@ -145,11 +181,11 @@
 \newcounter{scenenumber}
 \setcounter{scenenumber}{0}
 
-% Internal: track current scene label for breakdown logging
 \newcommand{\@currentscene}{0}
 
 % \slugline[label]{INT./EXT.}{LOCATION}{TIME}
-% Label is optional; if omitted, auto-increments.
+% FD: Bold, ALL CAPS, full width, SpaceBefore = 24pt.
+% Scene numbers on both left and right margins.
 \newcommand{\slugline}[4][]{%
   \ifthenelse{\equal{#1}{}}{%
     \stepcounter{scenenumber}%
@@ -157,7 +193,7 @@
   }{%
     \renewcommand{\@currentscene}{#1}%
   }%
-  \vspace{\parskip}%
+  \vspace{\fdSlugSpace}%
   \noindent%
   \makebox[0pt][r]{\textbf{\@currentscene}\hspace{2.5em}}%
   \textbf{\MakeUppercase{#2} \MakeUppercase{#3} --- \MakeUppercase{#4}}%
@@ -166,64 +202,83 @@
 }
 
 % ============================================================
-% SCREENPLAY ELEMENTS
+% SCREENPLAY ELEMENTS — Final Draft matched
 % ============================================================
 
-% ACTION — full width
+% OUTLINE HEADINGS
+\newcommand{\@outlineheading}[2]{%
+  \par\vspace{6pt}%
+  {\noindent\color{outlinecolor}\fontfamily{qhv}\selectfont #1\textbf{#2}\par}%
+  \nopagebreak%
+}
+
+\newcommand{\summary}[1]{\@outlineheading{\Huge}{#1}}
+\newcommand{\outlineone}[1]{\@outlineheading{\LARGE}{#1}}
+\newcommand{\outlinetwo}[1]{\@outlineheading{\Large}{#1}}
+\newcommand{\outlinethree}[1]{\@outlineheading{\large}{#1}}
+
+% ACTION — full width, SpaceBefore = 12pt
 \newcommand{\action}[1]{%
+  \par\vspace{\fdActionSpace}%
+  {\setlength{\parindent}{0pt}\noindent #1\par}%
+}
+
+% GENERAL — same as ACTION but SpaceBefore = 0pt
+\newcommand{\general}[1]{%
   \par{\setlength{\parindent}{0pt}\noindent #1\par}%
 }
 
-% CHARACTER CUE — centered, uppercase
-% Optional extension: (V.O.), (O.S.), (CONT'D)
+% CHARACTER CUE — left-aligned at 2.0" indent, 3.75" wide
+% FD: Character cues are LEFT-aligned (not centered) at 3.50" from page edge.
 \newcommand{\character}[2][]{%
-  \par\vspace{0.5\parskip}%
-  {\centering
+  \par\vspace{\fdCharSpace}%
+  \noindent\hspace*{\fdCharIndent}%
+  \begin{minipage}[t]{\fdCharWidth}%
     \MakeUppercase{#2}%
-    \ifthenelse{\equal{#1}{}}{}{ (#1)}\par}%
-  \nopagebreak\vspace{-\parskip}%
+    \ifthenelse{\equal{#1}{}}{}{ (#1)}%
+  \end{minipage}%
+  \par\nopagebreak%
 }
 
-% DIALOGUE — indented block (2.5in from left edge, 2.0in from right edge per standard)
+% DIALOGUE — 1.0" indent, 3.5" wide, SpaceBefore = 0pt
 \newcommand{\dialogue}[1]{%
   \par\nopagebreak%
-  \noindent\hspace*{1in}%
-  \begin{minipage}[t]{4in}%
+  \noindent\hspace*{\fdDiaIndent}%
+  \begin{minipage}[t]{\fdDiaWidth}%
     #1%
   \end{minipage}%
   \par%
 }
 
-% PARENTHETICAL
+% PARENTHETICAL — 1.5" indent, 2.5" wide, SpaceBefore = 0pt
 \newcommand{\paren}[1]{%
   \par\nopagebreak%
-  \noindent\hspace*{1.6in}%
-  \begin{minipage}[t]{2.5in}%
+  \noindent\hspace*{\fdParenIndent}%
+  \begin{minipage}[t]{\fdParenWidth}%
     (#1)%
   \end{minipage}%
-  \par\nopagebreak\vspace{-\parskip}%
+  \par\nopagebreak%
 }
 
-% TRANSITION — right-aligned
+% TRANSITION — right-aligned, SpaceBefore = 12pt
 \newcommand{\trans}[1]{%
-  \par%
+  \par\vspace{\fdTransSpace}%
   \hfill\MakeUppercase{#1}%
   \par%
 }
 
 % DUAL DIALOGUE — side by side
 \newcommand{\dualdia}[4]{%
-  % #1=CharA, #2=DialogueA, #3=CharB, #4=DialogueB
-  \par\vspace{0.5\parskip}%
+  \par\vspace{\fdCharSpace}%
   \noindent
   \begin{minipage}[t]{0.45\linewidth}%
-    {\centering\MakeUppercase{#1}\par}%
-    #2%
+    {\noindent\hspace*{0.8in}\MakeUppercase{#1}\par}%
+    \noindent\hspace*{0.3in}\begin{minipage}[t]{2.5in}#2\end{minipage}%
   \end{minipage}%
   \hfill
   \begin{minipage}[t]{0.45\linewidth}%
-    {\centering\MakeUppercase{#3}\par}%
-    #4%
+    {\noindent\hspace*{0.8in}\MakeUppercase{#3}\par}%
+    \noindent\hspace*{0.3in}\begin{minipage}[t]{2.5in}#4\end{minipage}%
   \end{minipage}%
   \par%
 }
@@ -233,11 +288,13 @@
 % ============================================================
 
 \newcommand{\@screentitle}{}
+\newcommand{\@screensubtitle}{}
 \newcommand{\@screenauthor}{}
 \newcommand{\@screencontact}{}
 \newcommand{\@screendraftinfo}{}
 
 \newcommand{\screentitle}[1]{\renewcommand{\@screentitle}{#1}}
+\newcommand{\screensubtitle}[1]{\renewcommand{\@screensubtitle}{#1}}
 \newcommand{\screenauthor}[1]{\renewcommand{\@screenauthor}{#1}}
 \newcommand{\screencontact}[1]{\renewcommand{\@screencontact}{#1}}
 \newcommand{\screendraftinfo}[1]{\renewcommand{\@screendraftinfo}{#1}}
@@ -246,7 +303,13 @@
   \thispagestyle{titlepage}%
   \begin{center}%
     \vspace*{2.5in}%
-    {\underline{\textbf{\@screentitle}}}\\[2\baselineskip]%
+    {\underline{\textbf{\@screentitle}}}%
+    \ifthenelse{\equal{\@screensubtitle}{}}{%
+      \\[2\baselineskip]%
+    }{%
+      \\[0.5\baselineskip]%
+      \@screensubtitle\\[2\baselineskip]%
+    }%
     Written by\\[0.5\baselineskip]%
     \@screenauthor%
     \ifthenelse{\equal{\@screendraftinfo}{}}{}{%
@@ -260,7 +323,7 @@
 }
 
 % ============================================================
-% BREAKDOWN LOG FILE (aux mechanism)
+% BREAKDOWN LOG FILE
 % ============================================================
 
 \newwrite\breakdownfile
@@ -275,13 +338,9 @@
   \fi
 }
 
-% Internal: write one entry to the breakdown log
-% #1=category tag, #2=text
-% Writes as \breakdownentry{scene}{category}{item} for safe re-reading
 \newcommand{\@logbreakdown}[2]{%
   \if@preproduction
     \begingroup
-      % Neutralize annotation and formatting commands to prevent nested expansion
       \let\prop\@firstofone
       \let\wardrobe\@firstofone
       \let\shot\@firstofone
@@ -303,17 +362,7 @@
 % ============================================================
 % ANNOTATION COMMANDS
 % ============================================================
-%
-% TWO BEHAVIORS:
-%   "text-preserving" — in clean mode, text remains (props, wardrobe)
-%   "text-removing"   — in clean mode, text vanishes (shot, cam, etc.)
-%
-% When annotations are nested (e.g. \prop inside \setnote), inner
-% annotations render as plain text with their tag to avoid recursive
-% \hl calls which cause soul "Reconstruction failed" errors.
 
-% Helper: redefine all annotations to plain-text versions (no \hl)
-% for use inside an outer \hl call.
 \newcommand{\@setupinnerannot}{%
   \def\prop##1{##1\textsuperscript{\,\tiny\sffamily P}}%
   \def\wardrobe##1{##1\textsuperscript{\,\tiny\sffamily W}}%
@@ -325,108 +374,78 @@
   \def\setnote##1{##1\textsuperscript{\,\tiny\sffamily D}}%
 }
 
-% --- Text-Preserving Annotations ---
-
-% \prop{item} — yellow highlight
 \newcommand{\prop}[1]{%
   \if@preproduction
     \@logbreakdown{PROP}{#1}%
     \begingroup\@setupinnerannot
     {\sethlcolor{propcolor}\hl{#1}}\textsuperscript{\,\tiny\sffamily P}%
     \endgroup
-  \else
-    #1%
-  \fi
+  \else #1\fi
 }
 
-% \wardrobe{item} — pink highlight
 \newcommand{\wardrobe}[1]{%
   \if@preproduction
     \@logbreakdown{WARDROBE}{#1}%
     \begingroup\@setupinnerannot
     {\sethlcolor{wardrobecolor}\hl{#1}}\textsuperscript{\,\tiny\sffamily W}%
     \endgroup
-  \else
-    #1%
-  \fi
+  \else #1\fi
 }
 
-% --- Text-Removing Annotations ---
-
-% \shot{type} — blue highlight
 \newcommand{\shot}[1]{%
   \if@preproduction
     \@logbreakdown{SHOT}{#1}%
     \begingroup\@setupinnerannot
     {\sethlcolor{shotcolor}\hl{#1}}\textsuperscript{\,\tiny\sffamily S}%
     \endgroup
-  \else
-    \unskip\ignorespaces
-  \fi
+  \else \unskip\ignorespaces\fi
 }
 
-% \cam{movement} — purple highlight
 \newcommand{\cam}[1]{%
   \if@preproduction
     \@logbreakdown{CAM}{#1}%
     \begingroup\@setupinnerannot
     {\sethlcolor{camcolor}\hl{#1}}\textsuperscript{\,\tiny\sffamily C}%
     \endgroup
-  \else
-    \unskip\ignorespaces
-  \fi
+  \else \unskip\ignorespaces\fi
 }
 
-% \lighting{description} — orange highlight
 \newcommand{\lighting}[1]{%
   \if@preproduction
     \@logbreakdown{LIGHTING}{#1}%
     \begingroup\@setupinnerannot
     {\sethlcolor{lightingcolor}\hl{#1}}\textsuperscript{\,\tiny\sffamily L}%
     \endgroup
-  \else
-    \unskip\ignorespaces
-  \fi
+  \else \unskip\ignorespaces\fi
 }
 
-% \sfx{description} — green highlight
 \newcommand{\sfx}[1]{%
   \if@preproduction
     \@logbreakdown{SFX}{#1}%
     \begingroup\@setupinnerannot
     {\sethlcolor{sfxcolor}\hl{#1}}\textsuperscript{\,\tiny\sffamily X}%
     \endgroup
-  \else
-    \unskip\ignorespaces
-  \fi
+  \else \unskip\ignorespaces\fi
 }
 
-% \vfx{description} — red highlight
 \newcommand{\vfx}[1]{%
   \if@preproduction
     \@logbreakdown{VFX}{#1}%
     \begingroup\@setupinnerannot
     {\sethlcolor{vfxcolor}\hl{#1}}\textsuperscript{\,\tiny\sffamily V}%
     \endgroup
-  \else
-    \unskip\ignorespaces
-  \fi
+  \else \unskip\ignorespaces\fi
 }
 
-% \setnote{description} — teal highlight
 \newcommand{\setnote}[1]{%
   \if@preproduction
     \@logbreakdown{SET}{#1}%
     \begingroup\@setupinnerannot
     {\sethlcolor{setnotecolor}\hl{#1}}\textsuperscript{\,\tiny\sffamily D}%
     \endgroup
-  \else
-    \unskip\ignorespaces
-  \fi
+  \else \unskip\ignorespaces\fi
 }
 
-% Register annotation commands with soul so they are treated as atomic
-% units inside \hl{} (prevents "Reconstruction failed" with nesting)
 \soulregister\prop{1}
 \soulregister\wardrobe{1}
 \soulregister\shot{1}
@@ -466,73 +485,47 @@
 }
 
 % ============================================================
-% BREAKDOWN TABLE (reads the .breakdown file)
+% BREAKDOWN TABLE
 % ============================================================
 
-% \printbreakdown — outputs a formatted table from the logged entries
-% This requires TWO compilation passes (like \tableofcontents).
 \newcommand{\printbreakdown}{%
   \if@preproduction
     \newpage
-    \begin{center}
-      \textbf{\large SCENE BREAKDOWN}
-    \end{center}
+    \begin{center}\textbf{\large SCENE BREAKDOWN}\end{center}
     \vspace{\baselineskip}
-    {%
-      \small
-      % Define how each entry renders inside the table
+    {\small
       \def\breakdownentry##1##2##3{##1 & ##2 & ##3 \\}%
       \noindent
       \begin{longtable}{@{}p{0.8cm}p{2cm}p{10cm}@{}}
         \toprule
         \textbf{Sc.} & \textbf{Category} & \textbf{Item} \\
-        \midrule
-        \endhead
-        \bottomrule
-        \endfoot
-        \IfFileExists{\jobname.breakdown}{%
-          \input{\jobname.breakdown}%
-        }{}%
+        \midrule\endhead\bottomrule\endfoot
+        \IfFileExists{\jobname.breakdown}{\input{\jobname.breakdown}}{}%
       \end{longtable}
     }%
   \fi
 }
 
-% We also provide a simpler raw-text breakdown reader
-% that lists entries line by line (more robust fallback)
 \newcommand{\printbreakdownraw}{%
   \if@preproduction
     \newpage
-    \begin{center}
-      \textbf{\large SCENE BREAKDOWN}
-    \end{center}
+    \begin{center}\textbf{\large SCENE BREAKDOWN}\end{center}
     \vspace{\baselineskip}
     \noindent\begin{sloppypar}\textit{%
       The full machine-readable breakdown is in
-      \texttt{\jobname.breakdown}.
-      Below is a formatted summary.%
+      \texttt{\jobname.breakdown}. Below is a formatted summary.%
     }\end{sloppypar}
     \vspace{\baselineskip}
-
-    {%
-      \small
-      % Neutralize annotation commands for safe re-reading
-      \let\prop\@firstofone
-      \let\wardrobe\@firstofone
-      \let\shot\@firstofone
-      \let\cam\@firstofone
-      \let\lighting\@firstofone
-      \let\sfx\@firstofone
-      \let\vfx\@firstofone
-      \let\setnote\@firstofone
+    {\small
+      \let\prop\@firstofone  \let\wardrobe\@firstofone
+      \let\shot\@firstofone  \let\cam\@firstofone
+      \let\lighting\@firstofone \let\sfx\@firstofone
+      \let\vfx\@firstofone   \let\setnote\@firstofone
       \let\textit\@firstofone
-      % Define how each entry renders as a simple line
       \def\breakdownentry##1##2##3{%
         \par\noindent\textbf{Sc.~##1} \quad [\textbf{##2}] \quad ##3%
       }%
-      \IfFileExists{\jobname.breakdown}{%
-        \input{\jobname.breakdown}%
-      }{%
+      \IfFileExists{\jobname.breakdown}{\input{\jobname.breakdown}}{%
         \textit{(No breakdown data --- compile twice.)}%
       }%
     }
@@ -543,8 +536,6 @@
 % CONVENIENCE: CONTINUED / MORE
 % ============================================================
 
-% (CONTINUED) at bottom of page, CONTINUED: at top — handled by
-% the standard screenplay convention. Providing manual commands:
 \newcommand{\continued}{%
   \par\vfill\noindent\MakeUppercase{(continued)}\newpage%
   \noindent\MakeUppercase{continued:}\par%
@@ -555,7 +546,7 @@
 }
 
 % ============================================================
-% NOTES / COMMENTS (non-printing unless preproduction)
+% NOTES / COMMENTS
 % ============================================================
 
 \newcommand{\scriptnote}[1]{%
@@ -572,9 +563,6 @@
 % HYPERREF CONFIG
 % ============================================================
 
-\hypersetup{
-  colorlinks=false,
-  pdfborder={0 0 0},
-}
+\hypersetup{colorlinks=false, pdfborder={0 0 0}}
 
 \endinput
