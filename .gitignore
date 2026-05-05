@@ -29,6 +29,8 @@
 
 # Compiled PDFs (regenerated on compile)
 *.pdf
+# Reference PDFs linked from README
+!example/*.pdf
 
 # macOS
 .DS_Store

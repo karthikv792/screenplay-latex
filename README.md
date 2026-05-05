@@ -19,9 +19,9 @@ Write, annotate, and prepare screenplays entirely in LaTeX. Toggle between a cle
 | Clean Script | Pre-Production Script |
 |:---:|:---:|
 | Standard shooting script with no annotations | Color-coded annotations for props, shots, lighting, and more |
-| [View PDF](example_clean.pdf) | [View PDF](example_preproduction.pdf) |
+| [View PDF](example/example.pdf) | [View PDF](example/example_preproduction.pdf) |
 
-> **See it in action:** Download [example.tex](example.tex) and compile it yourself to explore every feature.
+> **See it in action:** Download [example.tex](example/example.tex) and compile it yourself to explore every feature.
 
 ---
 
@@ -68,8 +68,8 @@ git clone https://github.com/your-username/screenplay-latex.git
 cd screenplay-latex
 
 # 2. Compile the example screenplay (run twice for the breakdown table)
-pdflatex example.tex
-pdflatex example.tex
+pdflatex -output-directory=example example/example.tex
+pdflatex -output-directory=example example/example.tex
 ```
 
 ### Toggle Pre-Production Mode
@@ -89,13 +89,12 @@ One option controls everything. No other changes required.
 
 ```
 screenplay-latex/
-├── screenplay.cls            # Document class -- all formatting and annotation logic
-├── example.tex               # Full sample screenplay demonstrating every feature
-├── example.pdf               # Compiled output (pre-production mode)
-├── example_clean.pdf         # Compiled output (clean shooting script)
-├── example_preproduction.pdf # Compiled output (pre-production mode, reference)
-├── example.breakdown         # Auto-generated scene breakdown data
-└── README.md                 # This file
+├── screenplay.cls                  # Document class -- all formatting and annotation logic
+├── example/
+│   ├── example.tex                 # Full sample screenplay demonstrating every feature
+│   ├── example.pdf                 # Compiled output (clean shooting script)
+│   └── example_preproduction.pdf   # Compiled output (pre-production mode, reference)
+└── README.md                       # This file
 ```
 
 ---
